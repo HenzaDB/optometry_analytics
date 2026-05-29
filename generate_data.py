@@ -176,4 +176,4 @@ for patient_id in patient_id:
 conn.commit()
 cur.close()
 conn.close()
-print("Synthetic data generation complete!")
+print("Data generation complete!")
