@@ -1,4 +1,20 @@
-venv/
+#data files
+*.csv
+*.xlsx
+*.xls
+
+#python
 __pycache__/
 *.pyc
+*.pyo
+
+#jupyter
+.ipynb_checkpoints/
+
+#environment
 .env
+venv/
+
+#system
+.DS_Store
+Thumbs.db
