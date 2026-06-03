@@ -1,6 +1,7 @@
 from dotenv import load_dotenv
 load_dotenv()
 
+import os
 import psycopg2
 import random
 from faker import Faker
@@ -111,7 +112,7 @@ complaints =['Routine check',
              ]
 
 appointment_id = []
-for patient_id in patient_id:
+for pid in patient_id:
     num_appts = random.randint(1, 4)
     appt_dates = sorted([
         fake.date_between(start_date = '-3y', end_date = 'today')
@@ -127,7 +128,7 @@ for patient_id in patient_id:
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING appointment_id""",
             (
-                patient_id,
+                pid,
                 random.choice(optometrist_id),
                 appt_date,
                 random.choice(visit_id),
@@ -152,7 +153,7 @@ for patient_id in patient_id:
                 (appointment_id, diagnosis_id, is_primary)
                 VALUES (%s, %s, %s)""",
                 (
-                    appointment_id,
+                    appointment_ids,
                     diag_id,
                     i == 0
                 )
@@ -164,8 +165,8 @@ for patient_id in patient_id:
                 (appointment_id, patient_id, destination_id, referral_reason, referral_date, referral_attended)
                 VALUES (%s, %s, %s, %s, %s, %s)""",
                 (
-                    appointment_id,
-                    patient_id,
+                    appointment_ids,
+                    pid,
                     random.choice(referral_id),
                     fake.sentence(nb_words = 8),
                     appt_date,
