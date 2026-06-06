@@ -8,17 +8,19 @@ from faker import Faker
 from datetime import date, timedelta
 
 fake = Faker()
-random.seed(42)
+random.seed(42)     # Set seed for reproducibility
 
+#DB connection parameters
 conn = psycopg2.connect(
     host = "localhost",
     port = 5432,
     dbname = "optometry_analytics",
     user = "postgres",
-    password = os.environ.get("PG_PASSWORD")
+    password = os.environ.get("PG_PASSWORD")    # Ensure you have PG_PASSWORD set in your .env file
 )
 cur = conn.cursor()
 
+#Populate lookup tables
 genders = ['Male', 'Female', 'Non-binary', 'Other', 'Prefer not to say']
 cur.executemany("INSERT INTO gender_types (gender_label) VALUES (%s) ON CONFLICT DO NOTHING", [(g,) for g in genders]
 )
@@ -46,8 +48,10 @@ icd10_codes = [
 cur.executemany("INSERT INTO diagnoses (icd10_code, description) VALUES (%s, %s) ON CONFLICT DO NOTHING", icd10_codes
 )
 
+#Generate Optometrists
+num_optometrists = 3 #Edit this parameter for number of desired optometrists in dataset
 optometrist_id = []
-for _ in range(3):
+for _ in range(num_optometrists):
     cur.execute(
         """INSERT INTO optometrists(first_name, last_name, ahpra_num, practice_location)
            VALUES (%s, %s, %s, %s) RETURNING optom_id""",
@@ -68,8 +72,10 @@ for _ in range(3):
 cur.execute("SELECT gender_id FROM gender_types")
 gender_id = [r[0] for r in cur.fetchall()]
 
+#Generate Patients
+num_patients = 200 #Edit this parameter for number of desired patients in dataset
 patient_id = []
-for _ in range(200):
+for _ in range(num_patients):
     dob = fake.date_of_birth(minimum_age=5, maximum_age=90)
     cur.execute("""INSERT INTO patients
                 (first_name, last_name, date_of_birth, gender_id,
@@ -86,10 +92,11 @@ for _ in range(200):
                     fake.phone_number(),
                     fake.city(),
                     fake.postcode(),
-                    fake.numerify('##########')
+                    fake.numerify('##########') #Synthetic 10 digit Medicare number
                 ))
     patient_id.append(cur.fetchone()[0])
 
+#Generate appointments
 cur.execute("SELECT visit_id FROM visit_types")
 visit_id = [r[0] for r in cur.fetchall()]
 
@@ -113,7 +120,7 @@ complaints =['Routine check',
 
 appointment_id = []
 for pid in patient_id:
-    num_appts = random.randint(1, 4)
+    num_appts = random.randint(1, 4) #Each patient receives between 1-4 appointments over 3 years
     appt_dates = sorted([
         fake.date_between(start_date = '-3y', end_date = 'today')
         for _ in range(num_appts)
@@ -133,20 +140,20 @@ for pid in patient_id:
                 appt_date,
                 random.choice(visit_id),
                 random.choice(complaints),
-                random.choice([6, 12, 18, 24, 36, 42, 60]),
-                random.choice([6, 12, 18, 24, 36, 42, 60]),
-                random.choice([6, 6, 6, 9, 12]),
+                random.choice([6, 12, 18, 24, 36, 42, 60]), #Snellen acuity denominators, e.g. 18 represents 6/18 vision
+                random.choice([6, 12, 18, 24, 36, 42, 60]), #For patients with worse than 6/60, e.g. HM, NLP etc set to 6/60 for simplicity
+                random.choice([6, 6, 6, 9, 12]), #Aided VA assumes better skewed vision
                 random.choice([6, 6, 6, 9, 12]),
                 round(random.uniform(10, 21), 1,),
                 round(random.uniform(10, 21), 1,),
-                random.choice([6, 12, 12, 18, 24]),
+                random.choice([6, 12, 12, 18, 24]), #Set 12 months as most common recall period
                 fake.sentence(nb_words = 12)
             )
         )
         appointment_ids = cur.fetchone()[0]
         appointment_id.append(appointment_ids)
 
-        sampled_diagnoses = random.sample(diagnosis_id, k = random.randint(1, 2))
+        sampled_diagnoses = random.sample(diagnosis_id, k = random.randint(1, 2)) #Assign 1-2 diagnoses per appointment
         for i, diag_id in enumerate(sampled_diagnoses):
             cur.execute(
                 """INSERT INTO appointment_diagnoses
@@ -159,7 +166,7 @@ for pid in patient_id:
                 )
             )
         
-        if random.random() < 0.2:
+        if random.random() < 0.2: #20% of appointments result in a referral
             cur.execute(
                 """INSERT INTO referrals
                 (appointment_id, patient_id, destination_id, referral_reason, referral_date, referral_attended)
@@ -170,7 +177,7 @@ for pid in patient_id:
                     random.choice(referral_id),
                     fake.sentence(nb_words = 8),
                     appt_date,
-                    random.choice([True, True, False, None]) # None represents unknown attendance
+                    random.choice([True, True, False, None]) #None represents unknown attendance
                 )
             )
 
