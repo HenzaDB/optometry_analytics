@@ -12,11 +12,11 @@ random.seed(42)     # Set seed for reproducibility
 
 #DB connection parameters
 conn = psycopg2.connect(
-    host = "localhost",
-    port = 5432,
-    dbname = "optometry_analytics",
-    user = "postgres",
-    password = os.environ.get("PG_PASSWORD")    # Ensure you have PG_PASSWORD set in your .env file
+    host = os.getenv("DB_HOST"),
+    port = os.getenv("DB_PORT"),
+    dbname = os.getenv("DB_NAME"),
+    user = os.getenv("DB_USER"),
+    password = os.getenv("DB_PASSWORD")
 )
 cur = conn.cursor()
 
