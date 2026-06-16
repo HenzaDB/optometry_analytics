@@ -7,7 +7,7 @@ import random
 from faker import Faker
 from datetime import date, timedelta
 
-fake = Faker()
+fake = Faker('en_AU')
 random.seed(42)     # Set seed for reproducibility
 
 #DB connection parameters
