@@ -17,12 +17,7 @@ conn = psycopg2.connect(
 df_patients = pd.read_sql("SELECT * FROM patients", conn)
 df_optometrists = pd.read_sql("SELECT * FROM optometrists", conn)
 df_appointments = pd.read_sql("SELECT * FROM appointments", conn)
-
-print(df_patients.shape)
-print(df_patients.head())
-print(df_optometrists.shape)
-print(df_optometrists.head())
-print(df_appointments.shape)
-print(df_appointments.head())
+df_gender_types = pd.read_sql("SELECT * FROM gender_types", conn)
+df_patients = df_patients.merge(df_gender_types, on="gender_id", how="left")
 
 conn.close()
