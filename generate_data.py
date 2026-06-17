@@ -8,7 +8,8 @@ from faker import Faker
 from datetime import date, timedelta
 
 fake = Faker('en_AU')
-random.seed(42)     # Set seed for reproducibility
+random.seed(42)
+Faker.seed(42)
 
 #DB connection parameters
 conn = psycopg2.connect(
@@ -20,7 +21,37 @@ conn = psycopg2.connect(
 )
 cur = conn.cursor()
 
-#Populate lookup tables
+# ================================================================
+# CONFIG - adjust variables to change the shape of generated data
+# ================================================================
+
+num_optometrists = 3
+
+# Edit Optom practice location
+optom_location = ['Melbourne CBD', 'Doncaster', 'Box Hill', 'Camberwell', 'Balwyn']
+
+# Edit list to adjust relative frequency of practice locations
+# Ensure number of weights match number of locations
+# Set location_weights to NULL if wanting equal distribution
+location_weights = [0.15, 0.2, 0.3, 0.15, 0.2]
+
+optom_weights = [0.5, 0.25, 0.25]
+
+num_patients = 200
+
+# Edit list to adjust relative frequency of patient genders
+# Ensure 5 weights are provided to match the number of genders listed in the genders list below
+# If altering genders list ensure corresponding number of weights are provided
+# Set gender_weights to NULL if wanting equal distribution
+gender_weights = [0.48, 0.48, 0.02, 0.01, 0.01]
+
+
+
+# ======================================================================
+# DATA GENERATION - avoid changing below unless altering data structure
+# ======================================================================
+
+# Populate lookup tables
 genders = ['Male', 'Female', 'Non-binary', 'Other', 'Prefer not to say']
 cur.executemany("INSERT INTO gender_types (gender_label) VALUES (%s) ON CONFLICT DO NOTHING", [(g,) for g in genders]
 )
@@ -48,8 +79,7 @@ icd10_codes = [
 cur.executemany("INSERT INTO diagnoses (icd10_code, description) VALUES (%s, %s) ON CONFLICT DO NOTHING", icd10_codes
 )
 
-#Generate Optometrists
-num_optometrists = 3 #Edit this parameter for number of desired optometrists in dataset
+# Generate Optometrists
 optometrist_id = []
 for _ in range(num_optometrists):
     cur.execute(
@@ -59,12 +89,7 @@ for _ in range(num_optometrists):
             fake.first_name(),
             fake.last_name(),
             'OPT' + fake.numerify('#######'),
-            random.choice(['Melbourne CBD',
-                           'Doncaster',
-                           'Box Hill',
-                           'Camberwell',
-                           'Balwyn'
-                           ])
+            random.choices(optom_location, weights = location_weights, k = 1)[0]
         )
     )
     optometrist_id.append(cur.fetchone()[0])
@@ -73,7 +98,6 @@ cur.execute("SELECT gender_id FROM gender_types")
 gender_id = [r[0] for r in cur.fetchall()]
 
 #Generate Patients
-num_patients = 200 #Edit this parameter for number of desired patients in dataset
 patient_id = []
 for _ in range(num_patients):
     dob = fake.date_of_birth(minimum_age=5, maximum_age=90)
@@ -87,7 +111,7 @@ for _ in range(num_patients):
                     fake.first_name(),
                     fake.last_name(),
                     dob,
-                    random.choice(gender_id),
+                    random.choices(gender_id, weights = gender_weights, k = 1)[0],
                     fake.email(),
                     fake.phone_number(),
                     fake.city(),
@@ -136,7 +160,7 @@ for pid in patient_id:
             RETURNING appointment_id""",
             (
                 pid,
-                random.choice(optometrist_id),
+                random.choices(optometrist_id, weights = optom_weights, k = 1)[0],
                 appt_date,
                 random.choice(visit_id),
                 random.choice(complaints),
@@ -166,7 +190,7 @@ for pid in patient_id:
                 )
             )
         
-        if random.random() < 0.2: #20% of appointments result in a referral
+        if random.random() < 0.2: # 20% of appointments result in a referral
             cur.execute(
                 """INSERT INTO referrals
                 (appointment_id, patient_id, destination_id, referral_reason, referral_date, referral_attended)
@@ -177,7 +201,7 @@ for pid in patient_id:
                     random.choice(referral_id),
                     fake.sentence(nb_words = 8),
                     appt_date,
-                    random.choice([True, True, False, None]) #None represents unknown attendance
+                    random.choice([True, True, False, None]) # None represents unknown attendance
                 )
             )
 
