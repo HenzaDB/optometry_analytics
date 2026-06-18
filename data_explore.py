@@ -19,5 +19,8 @@ df_optometrists = pd.read_sql("SELECT * FROM optometrists", conn)
 df_appointments = pd.read_sql("SELECT * FROM appointments", conn)
 df_gender_types = pd.read_sql("SELECT * FROM gender_types", conn)
 df_patients = df_patients.merge(df_gender_types, on="gender_id", how="left")
+df_patients['date_of_birth'] = pd.to_datetime(df_patients['date_of_birth'])
+df_appointments['appointment_date'] = pd.to_datetime(df_appointments['appointment_date'])
 
+print(df_appointments['appointment_date'].describe())
 conn.close()
