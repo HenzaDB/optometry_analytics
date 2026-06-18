@@ -1,3 +1,5 @@
+from tkinter import TRUE
+
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -50,6 +52,12 @@ gender_weights = [0.48, 0.48, 0.02, 0.01, 0.01]
 # ======================================================================
 # DATA GENERATION - avoid changing below unless altering data structure
 # ======================================================================
+
+# Set to False to append data instead of resetting tables
+# Take note to avoid duplicate data when running script multiples times if FALSE
+RESET_DATA = TRUE
+if RESET_DATA:
+    cur.execute("TRUNCATE TABLE optometrists, patients, appointments, appointment_diagnoses, referrals RESTART IDENTITY CASCADE")
 
 # Populate lookup tables
 genders = ['Male', 'Female', 'Non-binary', 'Other', 'Prefer not to say']
